@@ -1,6 +1,6 @@
 FROM alpine:3.4
 
-MAINTAINER fehguy
+LABEL maintainer="dev@userland.tech"
 
 RUN apk add --update nginx
 RUN mkdir -p /run/nginx

@@ -47,11 +47,13 @@
   <div id="swagger-editor"></div>
   <script src="./dist/swagger-editor-bundle.js"> </script>
   <script src="./dist/swagger-editor-standalone-preset.js"> </script>
+  <script src='./dist/holepunch.js' type="text/javascript"></script>
   <script>
   window.onload = function() {
     // Build a system
     const editor = SwaggerEditorBundle({
       dom_id: '#swagger-editor',
+      spec: holepunch,
       layout: 'StandaloneLayout',
       presets: [
         SwaggerEditorStandalonePreset

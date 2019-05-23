@@ -53,11 +53,7 @@
     // Build a system
     const editor = SwaggerEditorBundle({
       dom_id: '#swagger-editor',
-      spec: holepunch,
-      layout: 'StandaloneLayout',
-      presets: [
-        SwaggerEditorStandalonePreset
-      ]
+      url: 'https://raw.githubusercontent.com/CypherpunkArmory/Holepunch-API-Swagger/master/src/yaml/holepunch.yaml'
     })
 
     window.editor = editor

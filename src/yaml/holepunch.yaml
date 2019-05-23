@@ -1,0 +1,571 @@
+
+info:
+  description: 'This is the Holepunch API docs, please have your local instance running via docker. More info can be found at the [Holepunch Github repo](https://github.com/CypherpunkArmory/holepunch/)'
+  title: Holepunch API
+  version: 0.0.1
+  contact:
+    email: support@holepunch.io
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+openapi: 3.0.0
+
+servers:
+  - url: http://localhost:5000
+  - url: https://api.holepunch.io
+
+tags:
+  - name: Authentication
+    description: Obtaining and accessing an account
+
+  - name: Account Management
+    description: Manage account related details
+  
+  - name: Subdomains
+    description: Obtain and access subdomains
+    
+  - name: Tunnels
+    description: Obtain and access tunnels
+  
+
+paths:
+  /account:
+    post:
+      tags:
+      - Authentication
+      summary: Add a new user
+      description: Takes in an email and password and registers an account.  It will then send a confirmation email to the address provided via `email`
+      operationId: createAccount
+      
+      requestBody:
+        description: Account object that needs to be added
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+
+      responses:
+        '204':
+          description: Successful User Registration
+        '400':
+          description: Validation Error, request body does not follow the schema
+    
+    patch:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Account Management
+      summary: Edit user account details
+      description: Change information related to account details, such as password or email.
+      operationId: editAccount
+      requestBody:
+        description: Account object that needs to be updated
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          
+      responses:
+        '200':
+          description: Successfully updated account details
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: If changing the email to another address, the address may already be registered to another account.
+        '403':
+          description: If the request body required a password, then the supplied password is not correct.  This status code may occur if the permissions aren't correct.
+        '400':
+          description: Validation error, the supplied request body is not what the server expected.
+    
+    delete:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Account Management
+      summary: Delete a user record
+      description: Deletes an account and remove any associated tunnels/subdomains
+      operationId: deleteAccount
+
+      requestBody:
+        description: Account object that needs to be removed which specifies the account email
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+
+      responses:
+        '200':
+          description: Successful account delete operation
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: The supplied password is not correct or the access_token does not have sufficient permissions
+        '404':
+          description: The user cannot be found
+  
+  '/account/confirm/{token}':
+    get:
+      tags:
+        - Authentication
+      summary: Confirm account address
+      description: The token can be found in the email address that requested the token.  If a password reset operation was requested, this will return an access token to reset the password.
+      parameters:
+        - in: path
+          name: token
+          schema:
+            type: string
+          required: true
+          description: bearer token of the account to confirm
+          example: 'ImQ3NTgwNGIzLWEyZDUtNGQzYy04NGFiLTM4NDQ0ODczNjc5NyI.D8Wuuw.QxS-0-GCsIBSieE8vOQsTc02qlE'
+      
+      responses:
+        '200':
+          description: Successfully confirmed and received a token to manage the account
+        '204':
+          description: Successfully confirmed the account email address.
+  
+  
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: Login to account
+      description: Takes in an email and password and returns back an account blob that contains an `access_token` and a `refresh_token`.  Use the `access token` to authenticate the other requests
+      operationId: userLogin
+
+      requestBody:
+        description: Account object that provides correct credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+              
+      responses:
+        200:
+          description: Successful account authentication
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: Unable to login into account.  Email may not be registered yet, password might be incorrect or the account is not yet confirmed. 
+          
+  /session:
+    post:
+      tags:
+        - Authentication
+      summary: Login to account
+      description: Takes in an email and password and returns back an account blob that contains an `access_token` and a `refresh_token`.  Use the access token to authenticate the other requests
+      operationId: startSession
+
+      requestBody:
+        description: Account object that provides correct credentials
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+              
+      responses:
+        200:
+          description: Successful account authentication
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: Unable to login into account.  Email may not be registered yet, password might be incorrect or the account is not yet confirmed. 
+          
+  '/account/token':
+    post:
+      tags:
+        - Account Management
+      summary: Make a new access token for confirming email account or resetting password.
+      description: Sends an email with link to confirm email account or to reset account password.  If requesting an account confirm token, an email is sent if the account is registered but not yet confirmed.  If requesting a password reset token, an email is sent if the account is registered and confirmed.
+      operationId: sendAccountConfirmEmail
+      
+      requestBody:
+        description: Request Object containing account email address.  The `type` can either be `email_confirm` or `password_reset` depending on which token is desired.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewToken'
+                
+      responses:
+        200:
+          description: Successfully sent new message or email was not found.  If requesting account confirm token and account already confirmed, then 200 is returned.  Same is true for if requesting reset password token and account is not yet confirmed.
+        401:
+          description: Request object sent does not follow scehma
+        
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - Account Management
+      summary: Revokes all access tokens issued to the current account
+      description: Changes the UUID for the current user.  All previously existing tokens that are associated with the previous UUID are now unusable.
+      operationId: revokeTokens
+                
+      responses:
+        204:
+          description: Successfully revoked all tokens associated with account.
+    
+  /subdomains:
+    post:
+      security:
+        - bearerAuth: []  
+      tags:
+      - Subdomains
+      summary: Reserves a subdomain 
+      description: Takes in a name and type and returns the reserved subdomain
+      operationId: reserveSubdomain
+      
+      requestBody:
+        description: Subdomain object that needs to be reserved
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subdomain'
+
+      responses:
+        '200':
+          description: Successfully reserved subdomain
+        '403':
+          description: Subdomain reservation limit reached
+        '400':
+          description: Requested subdomain is already reserved, or the request body does not match the expected format.
+        '500':
+          description: Database error when reserving a subdomain
+    
+    get:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Subdomains
+      summary: List all reserved subdomains 
+      description: For the current user, show all associated subdomains
+      operationId: getSubdomains
+      
+      responses:
+        # does it explicitly send a code?
+        '200':
+          description: Successfully retrieved associated subdomains
+          
+  '/subdomains/{id}':
+    delete:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Subdomains
+      summary: Release a owned reserved subdomain
+      description: Remove a subdomain from the current user and allow another user to reserved it
+      operationId: releaseSubdomain
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The subdomain id to delete from the database
+          example: 
+    
+      responses:
+        '204':
+          description: Successfully deleted subdomain
+        '403':
+          description: Access denied or the subdomain is currently in use
+        '401':
+            $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A subdomain with the passed-in ID could not be found under the current user
+    
+    get:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Subdomains
+      summary: Retrieve information on a subdomain
+      description: Returns a subdomain object
+      operationId: getSubdomain
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The subdomain id to lookup in the database
+      
+      responses:
+        '200':
+          description: Successfully looked up subdomain, and received object with subdomain information.
+        '400':
+          description: Bad request, missing `id` parameter
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A subdomain with the passed-in ID could not be found under the current user
+      
+  /tunnels:
+    post:
+      security:
+        - bearerAuth: []  
+      tags:
+      - Tunnels
+      summary: Creates a tunnel 
+      description: Takes in a port and ssh key then returns the newly opened tunnel if successful. `Port` is the external port number that traffic will be routed through.  An optional parameter `related` takes in an owned subdomain id that will be used to access the tunnel.
+      operationId: createTunnel
+      
+      requestBody:
+        description: Tunnel object that needs to be reserved
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tunnel'
+
+      responses:
+        '200':
+          description: Successfully created tunnel
+        '400':
+          description: The request body sent with the request does not match what the server expected
+        '403':
+          description: Access denied or the requested subdomain is currently in use by another tunnel
+        '500':
+          description: Database error when creating a tunnel
+    
+    get:
+      tags:
+        - Tunnels
+      security:
+        - bearerAuth: []  
+      summary: Fetches all of current user's tunnels
+      description: For the current user, show all associated tunnels
+      operationId: getTunnels
+      
+      responses:
+        '200':
+          description: Successfully retrieved associated tunnels
+        '404':
+          description: Unable to find user with current credentials
+    
+  '/tunnels/{id}':
+    delete:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Tunnels
+      summary: Stop a currently running tunnel
+      description: Remove a tunnel and if a reserved subdomain is being used with the tunnel, it can now be used by another tunnel
+      operationId: deleteTunnel
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The tunnel id to delete from the database
+      
+      responses:
+        '204':
+          description: Successfully deleted the tunnel and released the associated subdomain
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Unable to find the user or tunnel
+    get:
+      security:
+      - bearerAuth: []  
+      tags:
+        - Tunnels
+      summary: Retrieve information about a tunnel
+      description: Returns a Tunnel object
+      operationId: getTunnel
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The tunnel id to lookup in the database
+      
+      responses:
+        '200':
+          description: Successfully looked up tunnel and received object with tunnel information.
+        '400':
+          description: Bad request, missing `id` parameter
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A tunnel with the passed-in ID could not be found under the current user
+
+  
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
+
+  schemas:
+    Account:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: test_user@email.com
+                password:
+                  type: string
+                  example: password123
+            type:
+              type: string
+              example: user
+      required:
+      - data
+      - attributes
+      - email
+      - password
+      - type
+    
+    Credentials:
+      type: object
+      properties:
+        email:
+          type: string
+          example: test_user@email.com
+        password:
+          type: string
+          example: password123
+      required:
+      - email
+      - password
+    
+    ChangePassword:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                  example: password123
+                new_password:
+                  type: string
+                  example: abcPassword
+            type:
+              type: string
+              example: user
+      required:
+      - data
+      - attributes
+      - old_password
+      - new_password
+      - type
+      
+    NewToken:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: test_user@email.com
+            type:
+              type: string
+              example: email_confirm
+      required:
+      - data
+      - attributes
+      - email
+      - type
+      
+    Subdomain:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: cooltoast.holepunch.io
+            type:
+              type: string
+              example: subdomain
+      required:
+      - data
+      - attributes
+      - name
+      - type
+      
+    Tunnel:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                port:
+                  type: array
+                  items:
+                    type: string
+                  example: ['http']
+                sshKey:
+                  type: string
+                  example: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCzNqhyLT7MZYAJYErqbvFJHKXIGvof9L6F1fseikAhZJhjqja2wx3fj0BHWxLec3nzUJ4mUGC459D3HWgJLEUrDxvcgFTiAZHhzSKvX2t1fknb93QQAqH0Q7yTJ/k4L7SYxlNAjOb3mInZaWiSKbxDenAQVnETPAnMIVLdD1cXIqak2vXN4vC4OUdft1NSftJrsV70BdrFIQQ6Ut//+df5WTeKCQAaRnh9FcrZOw6y1fqeTvJEfd4z1YYySvo2oqgYi1LJHZ+hqsm8/gi5vA/A8KBMMwwDZQxzP/XvWBnZjc3kPJ/eP+/80bLy6vZu13EA/MyVphwcan6FyYjpTL91"
+                
+            relationships:
+              type: object
+              properties:
+                subdomain:
+                  type: object
+                  properties:
+                    links:
+                      type: object
+                      properties:
+                        related: 
+                          type: string
+                          example: "/subdomains/646"
+            type:
+              type: string
+              example: "tunnel"      
+      required:
+      - data
+      - attributes
+      - port
+      - sshKey
+      
+  responses:
+    UnauthorizedError:
+      description: Access token is missing of invalid
+  

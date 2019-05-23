@@ -53,11 +53,11 @@ npm run build
 docker build -t swagger-editor .
 
 # Run the container
-docker run -d -p 6000:8080 swagger-editor
+docker run -d -p 5050:8080 swagger-editor
 
 ```
 
-You can then view the app by navigating to `http://localhost:6000` in your browser.
+You can then view the app by navigating to `http://localhost:5050` in your browser.
 
 
 ## Setting up the Holepunch API Locally

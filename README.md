@@ -33,7 +33,7 @@ To use this, run the following:
 
 ```
 docker pull lithogen/holepunch-api-swagger
-docker run -d -p 6000:8080 lithogen/holepunch-api-swagger
+docker run -d -p 5050:8080 lithogen/holepunch-api-swagger
 ```
 
 This will run Swagger Editor (in detached mode) on port 80 on your machine, so you can open it by navigating to `http://localhost` in your browser.

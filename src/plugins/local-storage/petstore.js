@@ -1,708 +1,574 @@
 // Exports Petstore.yaml
 
-export default `swagger: "2.0"
+export default `
 info:
-  description: "This is a sample server Petstore server.  You can find out more about\
-    \ Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).\
-    \  For this sample, you can use the api key \`special-key\` to test the authorization\
-    \ filters."
-  version: "1.0.0"
-  title: "Swagger Petstore"
-  termsOfService: "http://swagger.io/terms/"
+  description: 'This is the Holepunch API docs, please have your local instance \
+  \ running via docker. More info can be found at the \ 
+  \ [Holepunch Github repo](https://github.com/CypherpunkArmory/holepunch/)'
+  title: Holepunch API
+  version: 0.0.1
   contact:
-    email: "apiteam@swagger.io"
+    email: support@holepunch.io
   license:
-    name: "Apache 2.0"
-    url: "http://www.apache.org/licenses/LICENSE-2.0.html"
-host: "petstore.swagger.io"
-basePath: "/v2"
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+openapi: 3.0.0
+
+servers:
+  - url: http://localhost:5000
+  - url: https://api.holepunch.io
+
 tags:
-- name: "pet"
-  description: "Everything about your Pets"
-  externalDocs:
-    description: "Find out more"
-    url: "http://swagger.io"
-- name: "store"
-  description: "Access to Petstore orders"
-- name: "user"
-  description: "Operations about user"
-  externalDocs:
-    description: "Find out more about our store"
-    url: "http://swagger.io"
-schemes:
-- "https"
-- "http"
+  - name: Authentication
+    description: Obtaining and accessing an account
+
+  - name: Account Management
+    description: Manage account related details
+  
+  - name: Subdomains
+    description: Obtain and access subdomains
+    
+  - name: Tunnels
+    description: Obtain and access tunnels
+  
+
 paths:
-  /pet:
+  /account:
     post:
       tags:
-      - "pet"
-      summary: "Add a new pet to the store"
-      description: ""
-      operationId: "addPet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
+      - Authentication
+      summary: Add a new user
+      description: Takes in an email and password and registers an account.  It will then send a confirmation email to the address provided via \`email\`
+      operationId: createAccount
+      
+      requestBody:
+        description: Account object that needs to be added
         required: true
-        schema:
-          $ref: "#/definitions/Pet"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+
       responses:
-        405:
-          description: "Invalid input"
+        '204':
+          description: Successful User Registration
+        '400':
+          description: Validation Error, request body does not follow the schema
+    
+    patch:
       security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-    put:
+        - bearerAuth: []  
       tags:
-      - "pet"
-      summary: "Update an existing pet"
-      description: ""
-      operationId: "updatePet"
-      consumes:
-      - "application/json"
-      - "application/xml"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Pet object that needs to be added to the store"
+        - Account Management
+      summary: Edit user account details
+      description: Change information related to account details, such as password or email.
+      operationId: editAccount
+      requestBody:
+        description: Account object that needs to be updated
         required: true
-        schema:
-          $ref: "#/definitions/Pet"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePassword'
+          
       responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-        405:
-          description: "Validation exception"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByStatus:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by status"
-      description: "Multiple status values can be provided with comma separated strings"
-      operationId: "findPetsByStatus"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "status"
-        in: "query"
-        description: "Status values that need to be considered for filter"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-          enum:
-          - "available"
-          - "pending"
-          - "sold"
-          default: "available"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid status value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/findByTags:
-    get:
-      tags:
-      - "pet"
-      summary: "Finds Pets by tags"
-      description: "Muliple tags can be provided with comma separated strings. Use\
-        \ tag1, tag2, tag3 for testing."
-      operationId: "findPetsByTags"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "tags"
-        in: "query"
-        description: "Tags to filter by"
-        required: true
-        type: "array"
-        items:
-          type: "string"
-        collectionFormat: "multi"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "array"
-            items:
-              $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid tag value"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-      deprecated: true
-  /pet/{petId}:
-    get:
-      tags:
-      - "pet"
-      summary: "Find pet by ID"
-      description: "Returns a single pet"
-      operationId: "getPetById"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to return"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Pet"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
-      security:
-      - api_key: []
-    post:
-      tags:
-      - "pet"
-      summary: "Updates a pet in the store with form data"
-      description: ""
-      operationId: "updatePetWithForm"
-      consumes:
-      - "application/x-www-form-urlencoded"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet that needs to be updated"
-        required: true
-        type: "integer"
-        format: "int64"
-      - name: "name"
-        in: "formData"
-        description: "Updated name of the pet"
-        required: false
-        type: "string"
-      - name: "status"
-        in: "formData"
-        description: "Updated status of the pet"
-        required: false
-        type: "string"
-      responses:
-        405:
-          description: "Invalid input"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
+        '200':
+          description: Successfully updated account details
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: If changing the email to another address, the address may already be registered to another account.
+        '403':
+          description: If the request body required a password, then the supplied password is not correct.  This status code may occur if the permissions aren't correct.
+        '400':
+          description: Validation error, the supplied request body is not what the server expected.
+    
     delete:
-      tags:
-      - "pet"
-      summary: "Deletes a pet"
-      description: ""
-      operationId: "deletePet"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "api_key"
-        in: "header"
-        required: false
-        type: "string"
-      - name: "petId"
-        in: "path"
-        description: "Pet id to delete"
-        required: true
-        type: "integer"
-        format: "int64"
-      responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Pet not found"
       security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /pet/{petId}/uploadImage:
-    post:
+        - bearerAuth: []  
       tags:
-      - "pet"
-      summary: "uploads an image"
-      description: ""
-      operationId: "uploadFile"
-      consumes:
-      - "multipart/form-data"
-      produces:
-      - "application/json"
-      parameters:
-      - name: "petId"
-        in: "path"
-        description: "ID of pet to update"
+        - Account Management
+      summary: Delete a user record
+      description: Deletes an account and remove any associated tunnels/subdomains
+      operationId: deleteAccount
+
+      requestBody:
+        description: Account object that needs to be removed which specifies the account email
         required: true
-        type: "integer"
-        format: "int64"
-      - name: "additionalMetadata"
-        in: "formData"
-        description: "Additional data to pass to server"
-        required: false
-        type: "string"
-      - name: "file"
-        in: "formData"
-        description: "file to upload"
-        required: false
-        type: "file"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Account'
+
       responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/ApiResponse"
-      security:
-      - petstore_auth:
-        - "write:pets"
-        - "read:pets"
-  /store/inventory:
+        '200':
+          description: Successful account delete operation
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: The supplied password is not correct or the access_token does not have sufficient permissions
+        '404':
+          description: The user cannot be found
+  
+  '/account/confirm/{token}':
     get:
       tags:
-      - "store"
-      summary: "Returns pet inventories by status"
-      description: "Returns a map of status codes to quantities"
-      operationId: "getInventory"
-      produces:
-      - "application/json"
-      parameters: []
-      responses:
-        200:
-          description: "successful operation"
+        - Authentication
+      summary: Confirm account address
+      description: The token can be found in the email address that requested the token.  If a password reset operation was requested, this will return an access token to reset the password.
+      parameters:
+        - in: path
+          name: token
           schema:
-            type: "object"
-            additionalProperties:
-              type: "integer"
-              format: "int32"
-      security:
-      - api_key: []
-  /store/order:
+            type: string
+          required: true
+          description: bearer token of the account to confirm
+          example: 'ImQ3NTgwNGIzLWEyZDUtNGQzYy04NGFiLTM4NDQ0ODczNjc5NyI.D8Wuuw.QxS-0-GCsIBSieE8vOQsTc02qlE'
+      
+      responses:
+        '200':
+          description: Successfully confirmed and received a token to manage the account
+        '204':
+          description: Successfully confirmed the account email address.
+  
+  
+  /login:
     post:
       tags:
-      - "store"
-      summary: "Place an order for a pet"
-      description: ""
-      operationId: "placeOrder"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "order placed for purchasing the pet"
+        - Authentication
+      summary: Login to account
+      description: Takes in an email and password and returns back an account blob that contains an \`access_token\` and a \`refresh_token\`.  Use the \`access token\` to authenticate the other requests
+      operationId: userLogin
+
+      requestBody:
+        description: Account object that provides correct credentials
         required: true
-        schema:
-          $ref: "#/definitions/Order"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+              
       responses:
         200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid Order"
-  /store/order/{orderId}:
-    get:
+          description: Successful account authentication
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: Unable to login into account.  Email may not be registered yet, password might be incorrect or the account is not yet confirmed. 
+          
+  /session:
+    post:
       tags:
-      - "store"
-      summary: "Find purchase order by ID"
-      description: "For valid response try integer IDs with value >= 1 and <= 10.\
-        \ Other values will generated exceptions"
-      operationId: "getOrderById"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of pet that needs to be fetched"
+        - Authentication
+      summary: Login to account
+      description: Takes in an email and password and returns back an account blob that contains an \`access_token\` and a \`refresh_token\`.  Use the access token to authenticate the other requests
+      operationId: startSession
+
+      requestBody:
+        description: Account object that provides correct credentials
         required: true
-        type: "integer"
-        maximum: 10.0
-        minimum: 1.0
-        format: "int64"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+              
       responses:
         200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/Order"
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
+          description: Successful account authentication
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        403:
+          description: Unable to login into account.  Email may not be registered yet, password might be incorrect or the account is not yet confirmed. 
+          
+  '/account/token':
+    post:
+      tags:
+        - Account Management
+      summary: Make a new access token for confirming email account or resetting password.
+      description: Sends an email with link to confirm email account or to reset account password.  If requesting an account confirm token, an email is sent if the account is registered but not yet confirmed.  If requesting a password reset token, an email is sent if the account is registered and confirmed.
+      operationId: sendAccountConfirmEmail
+      
+      requestBody:
+        description: Request Object containing account email address.  The \`type\` can either be \`email_confirm\` or \`password_reset\` depending on which token is desired.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewToken'
+                
+      responses:
+        200:
+          description: Successfully sent new message or email was not found.  If requesting account confirm token and account already confirmed, then 200 is returned.  Same is true for if requesting reset password token and account is not yet confirmed.
+        401:
+          description: Request object sent does not follow scehma
+        
     delete:
+      security:
+        - bearerAuth: []
       tags:
-      - "store"
-      summary: "Delete purchase order by ID"
-      description: "For valid response try integer IDs with positive integer value.\
-        \ Negative or non-integer values will generate API errors"
-      operationId: "deleteOrder"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "orderId"
-        in: "path"
-        description: "ID of the order that needs to be deleted"
-        required: true
-        type: "integer"
-        minimum: 1.0
-        format: "int64"
+        - Account Management
+      summary: Revokes all access tokens issued to the current account
+      description: Changes the UUID for the current user.  All previously existing tokens that are associated with the previous UUID are now unusable.
+      operationId: revokeTokens
+                
       responses:
-        400:
-          description: "Invalid ID supplied"
-        404:
-          description: "Order not found"
-  /user:
+        204:
+          description: Successfully revoked all tokens associated with account.
+    
+  /subdomains:
     post:
+      security:
+        - bearerAuth: []  
       tags:
-      - "user"
-      summary: "Create user"
-      description: "This can only be done by the logged in user."
-      operationId: "createUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "Created user object"
+      - Subdomains
+      summary: Reserves a subdomain 
+      description: Takes in a name and type and returns the reserved subdomain
+      operationId: reserveSubdomain
+      
+      requestBody:
+        description: Subdomain object that needs to be reserved
         required: true
-        schema:
-          $ref: "#/definitions/User"
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subdomain'
+
       responses:
-        default:
-          description: "successful operation"
-  /user/createWithArray:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithArrayInput"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/createWithList:
-    post:
-      tags:
-      - "user"
-      summary: "Creates list of users with given input array"
-      description: ""
-      operationId: "createUsersWithListInput"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - in: "body"
-        name: "body"
-        description: "List of user object"
-        required: true
-        schema:
-          type: "array"
-          items:
-            $ref: "#/definitions/User"
-      responses:
-        default:
-          description: "successful operation"
-  /user/login:
+        '200':
+          description: Successfully reserved subdomain
+        '403':
+          description: Subdomain reservation limit reached
+        '400':
+          description: Requested subdomain is already reserved, or the request body does not match the expected format.
+        '500':
+          description: Database error when reserving a subdomain
+    
     get:
+      security:
+        - bearerAuth: []  
       tags:
-      - "user"
-      summary: "Logs user into the system"
-      description: ""
-      operationId: "loginUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "username"
-        in: "query"
-        description: "The user name for login"
-        required: true
-        type: "string"
-      - name: "password"
-        in: "query"
-        description: "The password for login in clear text"
-        required: true
-        type: "string"
+        - Subdomains
+      summary: List all reserved subdomains 
+      description: For the current user, show all associated subdomains
+      operationId: getSubdomains
+      
       responses:
-        200:
-          description: "successful operation"
-          schema:
-            type: "string"
-          headers:
-            X-Rate-Limit:
-              type: "integer"
-              format: "int32"
-              description: "calls per hour allowed by the user"
-            X-Expires-After:
-              type: "string"
-              format: "date-time"
-              description: "date in UTC when token expires"
-        400:
-          description: "Invalid username/password supplied"
-  /user/logout:
-    get:
-      tags:
-      - "user"
-      summary: "Logs out current logged in user session"
-      description: ""
-      operationId: "logoutUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters: []
-      responses:
-        default:
-          description: "successful operation"
-  /user/{username}:
-    get:
-      tags:
-      - "user"
-      summary: "Get user by user name"
-      description: ""
-      operationId: "getUserByName"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be fetched. Use user1 for testing. "
-        required: true
-        type: "string"
-      responses:
-        200:
-          description: "successful operation"
-          schema:
-            $ref: "#/definitions/User"
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-    put:
-      tags:
-      - "user"
-      summary: "Updated user"
-      description: "This can only be done by the logged in user."
-      operationId: "updateUser"
-      produces:
-      - "application/xml"
-      - "application/json"
-      parameters:
-      - name: "username"
-        in: "path"
-        description: "name that need to be updated"
-        required: true
-        type: "string"
-      - in: "body"
-        name: "body"
-        description: "Updated user object"
-        required: true
-        schema:
-          $ref: "#/definitions/User"
-      responses:
-        400:
-          description: "Invalid user supplied"
-        404:
-          description: "User not found"
+        # does it explicitly send a code?
+        '200':
+          description: Successfully retrieved associated subdomains
+          
+  '/subdomains/{id}':
     delete:
+      security:
+        - bearerAuth: []  
       tags:
-      - "user"
-      summary: "Delete user"
-      description: "This can only be done by the logged in user."
-      operationId: "deleteUser"
-      produces:
-      - "application/xml"
-      - "application/json"
+        - Subdomains
+      summary: Release a owned reserved subdomain
+      description: Remove a subdomain from the current user and allow another user to reserved it
+      operationId: releaseSubdomain
+      
       parameters:
-      - name: "username"
-        in: "path"
-        description: "The name that needs to be deleted"
-        required: true
-        type: "string"
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The subdomain id to delete from the database
+          example: 
+    
       responses:
-        400:
-          description: "Invalid username supplied"
-        404:
-          description: "User not found"
-securityDefinitions:
-  petstore_auth:
-    type: "oauth2"
-    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
-    flow: "implicit"
-    scopes:
-      write:pets: "modify pets in your account"
-      read:pets: "read your pets"
-  api_key:
-    type: "apiKey"
-    name: "api_key"
-    in: "header"
-definitions:
-  Order:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      petId:
-        type: "integer"
-        format: "int64"
-      quantity:
-        type: "integer"
-        format: "int32"
-      shipDate:
-        type: "string"
-        format: "date-time"
-      status:
-        type: "string"
-        description: "Order Status"
-        enum:
-        - "placed"
-        - "approved"
-        - "delivered"
-      complete:
-        type: "boolean"
-        default: false
-    xml:
-      name: "Order"
-  Category:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Category"
-  User:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      username:
-        type: "string"
-      firstName:
-        type: "string"
-      lastName:
-        type: "string"
-      email:
-        type: "string"
-      password:
-        type: "string"
-      phone:
-        type: "string"
-      userStatus:
-        type: "integer"
-        format: "int32"
-        description: "User Status"
-    xml:
-      name: "User"
-  Tag:
-    type: "object"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      name:
-        type: "string"
-    xml:
-      name: "Tag"
-  Pet:
-    type: "object"
-    required:
-    - "name"
-    - "photoUrls"
-    properties:
-      id:
-        type: "integer"
-        format: "int64"
-      category:
-        $ref: "#/definitions/Category"
-      name:
-        type: "string"
-        example: "doggie"
-      photoUrls:
-        type: "array"
-        xml:
-          name: "photoUrl"
-          wrapped: true
-        items:
-          type: "string"
+        '204':
+          description: Successfully deleted subdomain
+        '403':
+          description: Access denied or the subdomain is currently in use
+        '401':
+            $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A subdomain with the passed-in ID could not be found under the current user
+    
+    get:
+      security:
+        - bearerAuth: []  
       tags:
-        type: "array"
-        xml:
-          name: "tag"
-          wrapped: true
-        items:
-          $ref: "#/definitions/Tag"
-      status:
-        type: "string"
-        description: "pet status in the store"
-        enum:
-        - "available"
-        - "pending"
-        - "sold"
-    xml:
-      name: "Pet"
-  ApiResponse:
-    type: "object"
-    properties:
-      code:
-        type: "integer"
-        format: "int32"
-      type:
-        type: "string"
-      message:
-        type: "string"
-externalDocs:
-  description: "Find out more about Swagger"
-  url: "http://swagger.io"`
+        - Subdomains
+      summary: Retrieve information on a subdomain
+      description: Returns a subdomain object
+      operationId: getSubdomain
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The subdomain id to lookup in the database
+      
+      responses:
+        '200':
+          description: Successfully looked up subdomain, and received object with subdomain information.
+        '400':
+          description: Bad request, missing \`id\` parameter
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A subdomain with the passed-in ID could not be found under the current user
+      
+  /tunnels:
+    post:
+      security:
+        - bearerAuth: []  
+      tags:
+      - Tunnels
+      summary: Creates a tunnel 
+      description: Takes in a port and ssh key then returns the newly opened tunnel if successful. \`Port\` is the external port number that traffic will be routed through.  An optional parameter \`related\` takes in an owned subdomain id that will be used to access the tunnel.
+      operationId: createTunnel
+      
+      requestBody:
+        description: Tunnel object that needs to be reserved
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tunnel'
+
+      responses:
+        '200':
+          description: Successfully created tunnel
+        '400':
+          description: The request body sent with the request does not match what the server expected
+        '403':
+          description: Access denied or the requested subdomain is currently in use by another tunnel
+        '500':
+          description: Database error when creating a tunnel
+    
+    get:
+      tags:
+        - Tunnels
+      security:
+        - bearerAuth: []  
+      summary: Fetches all of current user's tunnels
+      description: For the current user, show all associated tunnels
+      operationId: getTunnels
+      
+      responses:
+        '200':
+          description: Successfully retrieved associated tunnels
+        '404':
+          description: Unable to find user with current credentials
+    
+  '/tunnels/{id}':
+    delete:
+      security:
+        - bearerAuth: []  
+      tags:
+        - Tunnels
+      summary: Stop a currently running tunnel
+      description: Remove a tunnel and if a reserved subdomain is being used with the tunnel, it can now be used by another tunnel
+      operationId: deleteTunnel
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The tunnel id to delete from the database
+      
+      responses:
+        '204':
+          description: Successfully deleted the tunnel and released the associated subdomain
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Unable to find the user or tunnel
+    get:
+      security:
+      - bearerAuth: []  
+      tags:
+        - Tunnels
+      summary: Retrieve information about a tunnel
+      description: Returns a Tunnel object
+      operationId: getTunnel
+      
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          required: true
+          description: The tunnel id to lookup in the database
+      
+      responses:
+        '200':
+          description: Successfully looked up tunnel and received object with tunnel information.
+        '400':
+          description: Bad request, missing \`id\` parameter
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: A tunnel with the passed-in ID could not be found under the current user
+
+  
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT    # optional, arbitrary value for documentation purposes
+
+  schemas:
+    Account:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: test_user@email.com
+                password:
+                  type: string
+                  example: password123
+            type:
+              type: string
+              example: user
+      required:
+      - data
+      - attributes
+      - email
+      - password
+      - type
+    
+    Credentials:
+      type: object
+      properties:
+        email:
+          type: string
+          example: test_user@email.com
+        password:
+          type: string
+          example: password123
+      required:
+      - email
+      - password
+    
+    ChangePassword:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                old_password:
+                  type: string
+                  example: password123
+                new_password:
+                  type: string
+                  example: abcPassword
+            type:
+              type: string
+              example: user
+      required:
+      - data
+      - attributes
+      - old_password
+      - new_password
+      - type
+      
+    NewToken:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: test_user@email.com
+            type:
+              type: string
+              example: email_confirm
+      required:
+      - data
+      - attributes
+      - email
+      - type
+      
+    Subdomain:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: cooltoast.holepunch.io
+            type:
+              type: string
+              example: subdomain
+      required:
+      - data
+      - attributes
+      - name
+      - type
+      
+    Tunnel:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            attributes:
+              type: object
+              properties:
+                port:
+                  type: array
+                  items:
+                    type: string
+                  example: ['http']
+                sshKey:
+                  type: string
+                  example: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCzNqhyLT7MZYAJYErqbvFJHKXIGvof9L6F1fseikAhZJhjqja2wx3fj0BHWxLec3nzUJ4mUGC459D3HWgJLEUrDxvcgFTiAZHhzSKvX2t1fknb93QQAqH0Q7yTJ/k4L7SYxlNAjOb3mInZaWiSKbxDenAQVnETPAnMIVLdD1cXIqak2vXN4vC4OUdft1NSftJrsV70BdrFIQQ6Ut//+df5WTeKCQAaRnh9FcrZOw6y1fqeTvJEfd4z1YYySvo2oqgYi1LJHZ+hqsm8/gi5vA/A8KBMMwwDZQxzP/XvWBnZjc3kPJ/eP+/80bLy6vZu13EA/MyVphwcan6FyYjpTL91"
+                
+            relationships:
+              type: object
+              properties:
+                subdomain:
+                  type: object
+                  properties:
+                    links:
+                      type: object
+                      properties:
+                        related: 
+                          type: string
+                          example: "/subdomains/646"
+            type:
+              type: string
+              example: "tunnel"      
+      required:
+      - data
+      - attributes
+      - port
+      - sshKey
+      
+  responses:
+    UnauthorizedError:
+      description: Access token is missing of invalid`;
